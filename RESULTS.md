@@ -1,8 +1,8 @@
 # OreBench results
 
-> **v0.1 preliminary, via subscription CLIs, n=30, not API, settings not fully controlled.**
-> Run on 21 November 2026 on the 30-item public sample. Read the limits below before quoting
-> these numbers.
+> **v0.1, first release: one run via subscription CLIs, cross-vendor judges, n=30, not API,
+> settings not fully controlled.** Run on 21 November 2026 on the 30-item public sample. Read
+> the limits below before quoting these numbers.
 
 ## Headline: the public sample is a calibration tier
 
@@ -16,6 +16,18 @@ every reference number was reproduced within tolerance, apart from one rounding 
 | gpt-6.1-sol | Codex CLI (`codex exec`), default reasoning | claude-opus-5-5 (Claude Code agent) | 30 | **91.3%** | 97/97 | 89 | 94 | 94 | 91 | 93 | 89 | 89 | 90 |
 
 Category cells are percentages of available points (rubric points plus numeric-check points).
+
+**95% confidence intervals (item sampling only).**
+
+| Model | Overall | 95% CI (items) |
+|---|---|---|
+| claude-opus-5-5 | 96.1% | 94.3–97.9 |
+| claude-sonnet-5-5 | 95.4% | 93.4–97.3 |
+| gpt-6.1-sol | 91.3% | 89.1–93.4 |
+
+Percentile bootstrap over the 30 items (2,000 resamples, seed 0), computed from `results_v0.1/`
+with `scripts/summarise_scores.py`. This was a single run, so the intervals reflect item
+sampling only. They do not capture run-to-run or judge variance.
 
 **What this shows.** The public items test whether a model knows the practitioner's catch:
 Inferred ounces aggregated as recoverable, unit and density conversions, an unconstrained
@@ -85,8 +97,9 @@ Design principles:
 2. **Different judges for different vendors.** Avoiding self-judging means the Claude and GPT
    rows were graded by different judges. Compare rows with care. The numeric column is the only
    judge-free comparison.
-3. **n = 30, single run, no repeats.** Differences of a few points are within the noise. No
-   confidence intervals are claimed.
+3. **n = 30, single run, no repeats.** The intervals above cover item sampling only. The Opus
+   and Sonnet intervals overlap. The Claude and GPT intervals do not, but those rows were graded
+   by different judges, so part of that gap may reflect judge differences.
 4. **Items are still under expert review.** An independent technical review has already
    corrected 11 of the 30 public items. Scores may move as items are signed off.
 5. **Gemini and Grok not included.** No Gemini command-line tool was available on the test
