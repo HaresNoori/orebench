@@ -35,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=None, help="output directory (default results/<timestamp>)")
     ap.add_argument("--replay", action="append", default=[], metavar="FILE=LABEL",
                     help="score answers recorded elsewhere (JSONL with item_id, response)")
+    ap.add_argument("--runs", type=int, default=1, help="repeat each candidate N times (run-to-run spread)")
     ap.add_argument("--workers", type=int, default=1, help="parallel items per candidate")
     ap.add_argument("--check-keys", action="store_true", help="report which API keys are set, then exit")
     args = ap.parse_args(argv)
@@ -77,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
 
     out = Path(args.out) if args.out else ROOT / "results" / time.strftime("%Y%m%d-%H%M%S")
     print(f"{len(items)} items, {len(candidates)} candidate(s), judge {judge.name}, writing {out}")
-    summary = run(items, candidates, judge, out, max_tokens=args.max_tokens, workers=args.workers)
+    summary = run(items, candidates, judge, out, max_tokens=args.max_tokens, workers=args.workers, runs=args.runs)
     print()
     print(results_markdown(summary))
     if summary["errors"]:

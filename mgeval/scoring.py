@@ -205,6 +205,7 @@ class ItemScore:
     rubric_awarded: dict[str, int]
     rubric_max: int
     numeric: list[NumericResult] = field(default_factory=list)
+    run: int = 1
 
     @property
     def earned(self) -> int:

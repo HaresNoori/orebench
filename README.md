@@ -97,7 +97,8 @@ python -m mgeval --split public \
   --judge openai:<judge-model-id>
 ```
 
-Each run writes `responses.jsonl`, `scores.csv`, `summary.json` and a `results.md` table to
+Add `--runs 3` to repeat each model and report run-to-run spread; every table carries a
+bootstrap 95% confidence interval over items. Each run writes `responses.jsonl`, `scores.csv`, `summary.json` and a `results.md` table to
 `results/<timestamp>/`.
 
 **With Inspect** (optional, `pip install inspect-ai`):
@@ -112,23 +113,27 @@ inspect eval mgeval/inspect_task.py --model anthropic/<model-id> \
 **v0.1 preliminary, via subscription CLIs, n=30, not API, settings not fully controlled.**
 Full setup, judge pairing and limits are in [`RESULTS.md`](RESULTS.md).
 
-| Model | Rubric judge (cross-vendor) | Overall | Numeric pass |
-|---|---|---|---|
-| claude-opus-5-5 | gpt-6.1-sol | 96.1% | 96/97 |
-| claude-sonnet-5-5 | gpt-6.1-sol | 95.4% | 96/97 |
-| gpt-6.1-sol | claude-opus-5-5 | 91.3% | 97/97 |
+| Model | Rubric judge (cross-vendor) | Overall | 95% CI (bootstrap over items) | Numeric pass |
+|---|---|---|---|---|
+| claude-opus-5-5 | gpt-6.1-sol | 96.1% | 94.3-97.9 | 96/97 |
+| claude-sonnet-5-5 | gpt-6.1-sol | 95.4% | 93.4-97.3 | 96/97 |
+| gpt-6.1-sol | claude-opus-5-5 | 91.3% | 89.1-93.4 | 97/97 |
+
+Single run per model; intervals reflect item sampling only (computed from `results_v0.1/` with
+`scripts/summarise_scores.py`). Run-to-run spread needs `--runs N`.
 
 **Finding:** frontier models mostly pass the public sample. It works as a calibration tier:
 textbook-level mining reasoning is largely solved. The points they do lose come from
 judgement-heavy items: buried study flaws, risk ranking and drill-geometry remedies. Separating
 frontier models needs harder, expert-written tasks; the planned held-out *OreBench Hard*
-tier is described in `RESULTS.md`.
+tier is specified in [`HARD_TIER_DESIGN.md`](HARD_TIER_DESIGN.md) (design only; no hard items are published).
 
 ## Repository layout
 
 ```
 TAXONOMY.md               categories, difficulty scale, sources
 RESULTS.md                v0.1 preliminary results, judge setup and limits
+HARD_TIER_DESIGN.md       design of the held-out Hard tier (no items published)
 results_v0.1/             per-item scores and full model answers
 CASE_STUDY.md             one-page summary
 docs/AUTHORING.md         item format and authoring rules
@@ -136,6 +141,7 @@ docs/example_item.jsonl   a complete worked item
 items/public/*.jsonl      public sample, one file per category
 mgeval/                   harness: schema, providers, scoring, runner, CLI, Inspect backend
 scripts/validate_items.py item validator (schema, arithmetic, near-duplicates)
+scripts/summarise_scores.py  overall, bootstrap CI and run spread from scores.csv
 tests/
 ```
 

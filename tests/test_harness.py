@@ -220,3 +220,19 @@ def test_replay_judge(tmp_path):
     other = dict(EXAMPLE, id="GTM-P-999")
     with pytest.raises(providers.ProviderError):
         j.grade(other, "x")
+
+
+def test_multi_run_and_bootstrap_ci(tmp_path):
+    from mgeval.runner import bootstrap_ci, run
+
+    items = load_split("public")[:6]
+    summary = run(items, [providers.make_provider("mock:reference")], MockJudge(), tmp_path, runs=3,
+                  log=lambda *a: None)
+    row = summary["models"]["mock:reference"]
+    assert row["runs"] == 3 and row["items"] == 6
+    assert row["run_pcts"] == [100.0, 100.0, 100.0] and row["run_sd"] == 0.0
+    assert row["ci95_items"] == [100.0, 100.0]
+    lo, hi = bootstrap_ci([(1, 2), (2, 2), (0, 2), (2, 2)], reps=500, seed=1)
+    assert 0.0 <= lo <= 62.5 <= hi <= 100.0
+    assert bootstrap_ci([(1, 2)] * 5) == (50.0, 50.0)
+    assert "95% CI" in (tmp_path / "results.md").read_text(encoding="utf-8")
