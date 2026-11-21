@@ -1,0 +1,2 @@
+"""Mining geoscience and mining finance LLM evaluation harness."""
+__version__ = "0.1.0"

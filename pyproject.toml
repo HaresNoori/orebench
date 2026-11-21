@@ -1,0 +1,22 @@
+[project]
+name = "mining-geoscience-eval"
+version = "0.1.0"
+description = "An expert-written benchmark of mining geoscience and mining finance reasoning for frontier LLMs"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Hares Noori", email = "hares.noori777@gmail.com" }]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+inspect = ["inspect-ai"]
+
+[project.scripts]
+mgeval = "mgeval.cli:main"
+
+[tool.setuptools]
+packages = ["mgeval"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

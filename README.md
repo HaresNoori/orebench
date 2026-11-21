@@ -1,0 +1,159 @@
+# OreBench
+
+**Can a frontier model sign off as a Competent Person?**
+
+OreBench is an expert-written benchmark of mining geoscience and mining finance reasoning:
+reading a JORC or NI 43-101 resource statement, finding the flaw in a scoping study, getting
+contained metal right, judging a drill intercept, and naming the risk that actually stops a
+project.
+
+> **Status: v0.1 draft.** Every item is marked `DRAFT-FOR-HARES-REVIEW` until the author has
+> signed it off as domain expert. Headline model results will be published here after the first
+> live run (see [Results](#results)).
+
+## The failure this benchmark measures
+
+A fluent mining answer and a correct one often differ. Resource statements, technical reports
+and feasibility studies decide where billions of dollars of capital go, and they are governed
+by reporting codes whose meaning depends on practice, not vocabulary. OreBench is built so a
+general-purpose answer loses points. Each item hides the mistake a generalist makes and a
+Competent Person would not:
+
+- adding Inferred to Indicated ounces and calling the total "recoverable gold";
+- accepting a resource with no pit-shell or stope constraint as having "reasonable prospects";
+- converting alluvial tonnes and grade with two different densities;
+- applying recovery twice, or using avoirdupois instead of troy ounces;
+- treating a spectacular intercept as meaningful without true width, core recovery or QA/QC;
+- reading a gold stream as free capital rather than a sale of future revenue;
+- listing ten generic ESG risks instead of the one tenure or water issue that stops the
+  permit.
+
+## Why a mining eval
+
+Models are already being used to summarise technical reports, screen deals and support
+exploration targeting. As far as a survey of public benchmarks shows (November 2026), none
+tests this ground:
+
+| Existing benchmark | Covers | Gap OreBench fills |
+|---|---|---|
+| GeoBench, from the K2 geoscience LLM work (arXiv 2306.05064) | Geoscience exam questions (NPEE, AP) | No resource reporting, mine economics or finance |
+| EarthSE (arXiv 2505.17139) | Broad earth-science knowledge and reasoning | No mining codes, due diligence or deal reasoning |
+| FormationEval (arXiv 2601.02158) | Petroleum geoscience questions | Hard-rock and alluvial mining not covered |
+| MineBench, from the MineAgent work (arXiv 2412.17339) | Remote-sensing mineral exploration | No reporting codes, studies or finance |
+
+OreBench is, to the author's knowledge, the first public benchmark built on the JORC Code,
+NI 43-101 / CIM and S-K 1300 practice, together with mining project finance (streams,
+royalties, debt sizing, P/NAV).
+
+## What is in the box
+
+| | |
+|---|---|
+| **Taxonomy** | 8 categories: resource statements, study fatal flaws, grade-tonnage arithmetic, comparable deposits, geology-to-economics, permitting and ESG, drill-programme and QA/QC critique, financing and streams. See [`TAXONOMY.md`](TAXONOMY.md) |
+| **Public sample** | 30 items in [`items/public/`](items/public/), each with a prompt, an expert reference answer, a weighted rubric and exact numeric checks |
+| **Held-out bank** | About 150 further items kept private so scores can't be gamed by training on them. Available to evaluation teams on request |
+| **Harness** | Dependency-free Python for Anthropic, OpenAI and Google models, plus an optional [Inspect](https://inspect.aisi.org.uk/) backend |
+
+## Method
+
+1. **Practitioner-written items.** Each item encodes a judgement made in real technical-report
+   and due-diligence work. Projects are **hypothetical** by default, so no claim is made about
+   any real company. Citations point to the public standards, and each one is flagged as
+   checked against the primary document or not.
+2. **Weighted expert rubrics.** Each item has 3-8 single, checkable criteria, with the points
+   placed on the catch that matters. Long, confident answers that miss it score poorly.
+3. **Exact numeric checks, no model involved.** The model reports its numbers on a fixed
+   `FINAL_JSON` line, and each is compared to the reference within a stated tolerance. Every
+   reference value has an arithmetic derivation that the validator re-evaluates with a
+   restricted parser.
+4. **Cross-vendor LLM judge.** The judge sees the task, the reference answer and the rubric,
+   and should come from a different vendor than the model under test. A sample of its grades
+   is meant to be audited by hand.
+5. **Held-out discipline.** The private bank is never published. The validator rejects
+   held-out items that are near-copies of public ones (word 5-gram Jaccard overlap).
+
+Item score = points earned / points available. Results are reported overall, by category and
+by numeric pass rate.
+
+## Quick start
+
+```bash
+python -m pip install pytest      # the harness has no runtime dependencies
+python -m pytest -q                # tests; pass without the private bank present
+python -m mgeval --dry-run         # whole pipeline offline: no keys, no network
+```
+
+The dry run sends two mock "models" through the whole pipeline. One returns the reference
+answers and the other returns fluent filler. The scorer must rate the first near 100% and the
+second near 0%. **Dry-run scores are not model results.**
+
+**Live run.** Keys are read from `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` and `GOOGLE_API_KEY` at
+call time and never stored.
+
+```bash
+python -m mgeval --check-keys
+python -m mgeval --split public \
+  --model anthropic:<model-id> --model openai:<model-id> --model google:<model-id> \
+  --judge openai:<judge-model-id>
+```
+
+Each run writes `responses.jsonl`, `scores.csv`, `summary.json` and a `results.md` table to
+`results/<timestamp>/`.
+
+**With Inspect** (optional, `pip install inspect-ai`):
+
+```bash
+inspect eval mgeval/inspect_task.py --model anthropic/<model-id> \
+  -T split=public -T grader=openai/<grader-model-id>
+```
+
+## Results
+
+*Pending the first live run. This section will show the model ids, judge, date and the
+per-category table the harness produces, with the most common failure types and one example
+of each.*
+
+| Model | Items | Overall | Numeric pass | RES | FLAW | GTM | COMP | G2E | ESG | DRILL | FIN |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| *pending* | | | | | | | | | | | |
+
+## Repository layout
+
+```
+TAXONOMY.md               categories, difficulty scale, sources
+CASE_STUDY.md             one-page summary
+docs/AUTHORING.md         item format and authoring rules
+docs/example_item.jsonl   a complete worked item
+items/public/*.jsonl      public sample, one file per category
+mgeval/                   harness: schema, providers, scoring, runner, CLI, Inspect backend
+scripts/validate_items.py item validator (schema, arithmetic, near-duplicates)
+tests/
+```
+
+## Standards and sources
+
+The items are built on public reporting standards and public geoscience: the JORC Code (2012),
+NI 43-101 and Form 43-101F1, the CIM Definition Standards (2014), SEC Regulation S-K subpart
+1300, the Global Industry Standard on Tailings Management, IFC Performance Standards, and USGS
+mineral-deposit-model and assessment concepts.
+
+## Acknowledgements
+
+The optional backend uses [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai) (MIT
+licence) from the UK AI Security Institute. Positioning draws on the published benchmarks
+cited above.
+
+## Author
+
+**Hares Noori** is a mining geologist and AI-operations practitioner. He works on technical due
+diligence for gold, alluvial and diamond projects and builds multi-agent AI workflows. He
+designs domain evaluations, rubric-graded expert datasets and model-behaviour assessments for
+mining, geoscience and natural-resource finance.
+
+He is open to contract and freelance work on domain evals, expert data and AI for mineral
+exploration and mining investment: **hares.noori777@gmail.com**
+
+## Licence
+
+Code: MIT (see [`LICENSE`](LICENSE)). Public benchmark items and taxonomy: CC BY 4.0 (see
+[`LICENSE-DATA.md`](LICENSE-DATA.md)). The held-out bank is not distributed.
