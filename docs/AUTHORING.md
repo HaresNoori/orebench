@@ -11,7 +11,7 @@ published. Run `python scripts/validate_items.py <file>` before committing any i
 | `id` | str | `CAT-P-NNN` for public, `CAT-H-NNN` for held-out (e.g. `GTM-P-001`, `GTM-H-014`) |
 | `category` | str | One of `RES FLAW GTM COMP G2E ESG DRILL FIN` (see `TAXONOMY.md`) |
 | `split` | str | `public` or `private` |
-| `status` | str | `DRAFT-FOR-HARES-REVIEW` until the domain reviewer signs it off, then `REVIEWED` |
+| `status` | str | `EXPERT-REVIEW-PENDING` until the domain reviewer signs it off, then `REVIEWED` |
 | `difficulty` | int | 1 = graduate geologist, 2 = practising professional, 3 = Competent/Qualified Person level |
 | `scenario_type` | str | `hypothetical` (invented project; the prompt must say "hypothetical") or `public-report` |
 | `prompt` | str | The full task shown to the model. Self-contained; all numbers it needs are in it |
@@ -49,7 +49,7 @@ using exactly the `name` keys of the item's numeric checks. Units are stated in 
 ## Example (abridged)
 
 ```json
-{"id": "GTM-P-000", "category": "GTM", "split": "public", "status": "DRAFT-FOR-HARES-REVIEW",
+{"id": "GTM-P-000", "category": "GTM", "split": "public", "status": "EXPERT-REVIEW-PENDING",
  "difficulty": 1, "scenario_type": "hypothetical",
  "prompt": "A hypothetical open-pit gold project reports an Indicated Mineral Resource of 12.4 Mt at 1.35 g/t Au and an Inferred Mineral Resource of 5.1 Mt at 1.10 g/t Au ...",
  "numeric_checks": [{"name": "indicated_contained_koz", "value": 538.2, "unit": "koz Au",

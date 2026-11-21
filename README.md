@@ -7,9 +7,9 @@ reading a JORC or NI 43-101 resource statement, finding the flaw in a scoping st
 contained metal right, judging a drill intercept, and naming the risk that actually stops a
 project.
 
-> **Status: v0.1 draft.** Every item is marked `DRAFT-FOR-HARES-REVIEW` until the author has
-> signed it off as domain expert. Headline model results will be published here after the first
-> live run (see [Results](#results)).
+> **Status: v0.1, expert review in progress.** Items move from `EXPERT-REVIEW-PENDING` to
+> `REVIEWED` as each is signed off. Headline model results will be published here after the
+> first live run (see [Results](#results)).
 
 ## The failure this benchmark measures
 

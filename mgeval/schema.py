@@ -23,7 +23,7 @@ CATEGORIES = {
 }
 
 SPLITS = ("public", "private")
-STATUS_DRAFT = "DRAFT-FOR-HARES-REVIEW"
+STATUS_DRAFT = "EXPERT-REVIEW-PENDING"
 STATUSES = (STATUS_DRAFT, "REVIEWED")
 SCENARIO_TYPES = ("hypothetical", "public-report")
 ID_RE = re.compile(r"^(?P<cat>[A-Z0-9]+)-(?P<split>[PH])-(?P<num>\d{3})$")
