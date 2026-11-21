@@ -187,3 +187,36 @@ def test_inspect_backend_builds_task():
 
     t = mining_eval(split="public")
     assert len(t.dataset) == len(load_split("public"))
+
+
+def test_replay_provider_and_parallel_run(tmp_path):
+    items = load_split("public")[:4]
+    rec = tmp_path / "answers.jsonl"
+    with rec.open("w", encoding="utf-8") as fh:
+        for it in items[:3]:
+            final = {c["name"]: c["value"] for c in it["numeric_checks"]}
+            fh.write(json.dumps({"item_id": it["id"], "response": it["reference_answer"] + "\nFINAL_JSON: " + json.dumps(final)}) + "\n")
+    from mgeval.runner import run
+
+    cand = providers.ReplayProvider(str(rec), "replayed")
+    summary = run(items, [cand], MockJudge(), tmp_path / "out", workers=3, log=lambda *a: None)
+    assert summary["models"]["replayed"]["items"] == 3
+    assert summary["models"]["replayed"]["overall_pct"] == 100.0
+    assert len(summary["errors"]) == 1  # the fourth item has no recorded answer
+
+
+def test_cli_provider_specs():
+    p = providers.make_provider("codex-cli:default@medium")
+    assert isinstance(p, providers.CodexCLIProvider) and p.reasoning_effort == "medium"
+    assert isinstance(providers.make_provider("claude-cli:default"), providers.ClaudeCLIProvider)
+
+
+def test_replay_judge(tmp_path):
+    from mgeval.scoring import ReplayJudge
+
+    (tmp_path / f"{EXAMPLE['id']}.json").write_text('{"criteria": [{"id": "r1", "awarded": 2}, {"id": "r3", "awarded": 1}]}', encoding="utf-8")
+    j = ReplayJudge(str(tmp_path), "j")
+    assert j.grade(EXAMPLE, "x") == {"r1": 2, "r2": 0, "r3": 1, "r4": 0}
+    other = dict(EXAMPLE, id="GTM-P-999")
+    with pytest.raises(providers.ProviderError):
+        j.grade(other, "x")

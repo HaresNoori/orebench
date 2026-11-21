@@ -8,10 +8,10 @@ contained metal right, judging a drill intercept, and naming the risk that actua
 project.
 
 > **Status: v0.1, expert review in progress.** Items move from `EXPERT-REVIEW-PENDING` to
-> `REVIEWED` as each is signed off. Headline model results will be published here after the
-> first live run (see [Results](#results)).
+> `REVIEWED` as each is signed off. Preliminary results for three
+> frontier models are in [Results](#results).
 
-## The failure this benchmark measures
+## What this benchmark tests
 
 A fluent mining answer and a correct one often differ. Resource statements, technical reports
 and feasibility studies decide where billions of dollars of capital go, and they are governed
@@ -109,18 +109,27 @@ inspect eval mgeval/inspect_task.py --model anthropic/<model-id> \
 
 ## Results
 
-*Pending the first live run. This section will show the model ids, judge, date and the
-per-category table the harness produces, with the most common failure types and one example
-of each.*
+**v0.1 preliminary, via subscription CLIs, n=30, not API, settings not fully controlled.**
+Full setup, judge pairing and limits are in [`RESULTS.md`](RESULTS.md).
 
-| Model | Items | Overall | Numeric pass | RES | FLAW | GTM | COMP | G2E | ESG | DRILL | FIN |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| *pending* | | | | | | | | | | | |
+| Model | Rubric judge (cross-vendor) | Overall | Numeric pass |
+|---|---|---|---|
+| claude-opus-5-5 | gpt-6.1-sol | 96.1% | 96/97 |
+| claude-sonnet-5-5 | gpt-6.1-sol | 95.4% | 96/97 |
+| gpt-6.1-sol | claude-opus-5-5 | 91.3% | 97/97 |
+
+**Finding:** frontier models mostly pass the public sample. It works as a calibration tier:
+textbook-level mining reasoning is largely solved. The points they do lose come from
+judgement-heavy items: buried study flaws, risk ranking and drill-geometry remedies. Separating
+frontier models needs harder, expert-written tasks; the planned held-out *OreBench Hard*
+tier is described in `RESULTS.md`.
 
 ## Repository layout
 
 ```
 TAXONOMY.md               categories, difficulty scale, sources
+RESULTS.md                v0.1 preliminary results, judge setup and limits
+results_v0.1/             per-item scores and full model answers
 CASE_STUDY.md             one-page summary
 docs/AUTHORING.md         item format and authoring rules
 docs/example_item.jsonl   a complete worked item

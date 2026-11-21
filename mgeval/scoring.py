@@ -159,6 +159,30 @@ class MockJudge:
         return {r["id"]: int(round(r["points"] * frac)) for r in item["rubric"]}
 
 
+class ReplayJudge:
+    """Grades from judge outputs recorded elsewhere: one file per item, <dir>/<item_id>.json,
+    holding the judge's raw reply to judge_prompt(). Lets a judge run outside this harness
+    (for example in an agent session) while parsing and scoring stay identical."""
+
+    def __init__(self, directory: str, label: str = "replay-judge"):
+        from pathlib import Path
+
+        self.directory = Path(directory)
+        self.label = label
+
+    @property
+    def name(self) -> str:
+        return self.label
+
+    def grade(self, item: dict, response: str) -> dict[str, int]:
+        f = self.directory / f"{item['id']}.json"
+        if not f.exists():
+            from .providers import ProviderError
+
+            raise ProviderError(f"no recorded judgement for {item['id']}")
+        return parse_judge(f.read_text(encoding="utf-8"), item)
+
+
 class LLMJudge:
     def __init__(self, provider, max_tokens: int = 1500):
         self.provider = provider

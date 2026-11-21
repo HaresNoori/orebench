@@ -55,10 +55,13 @@ codes, study critique or mining finance. That is the gap OreBench fills.
   numeric grading separated from model grading.
 - **Engineering.** A clean, tested harness that another team can run in minutes.
 
-## Results
+## Results (v0.1 preliminary)
 
-*Placeholder until the first live run. This section will give headline scores per model and
-the three most common failure types, each with one example.*
+On the 30-item public sample, run through subscription tools with cross-vendor judging, scores
+were 96.1% for claude-opus-5-5, 95.4% for claude-sonnet-5-5 and 91.3% for gpt-6.1-sol. Frontier
+models mostly pass the public tier. The points they lose come from judgement-heavy items:
+buried study flaws, risk ranking and drill-geometry remedies. So the value lies in harder,
+held-out, expert-written tasks, which is the work I offer. Details and limits are in RESULTS.md.
 
 ## What I can do for your team
 

@@ -135,6 +135,91 @@ class GoogleProvider:
 
 
 # --------------------------------------------------------------------------
+# Subscription command-line agents (no API key; uses the CLI's own sign-in).
+# Settings are less controlled than the APIs: the CLI's own system prompt,
+# user-level instructions and default reasoning effort apply.
+# --------------------------------------------------------------------------
+@dataclass
+class CodexCLIProvider:
+    """OpenAI Codex CLI (`codex exec`), read-only sandbox, run in an empty directory."""
+
+    model: str = "default"
+    reasoning_effort: str | None = None
+    binary: str | None = None
+    reported_model: str | None = None
+
+    @property
+    def name(self) -> str:
+        return f"codex-cli:{self.reported_model or self.model}"
+
+    def complete(self, system: str, prompt: str, max_tokens: int) -> str:
+        import re
+        import shutil
+        import subprocess
+        import tempfile
+
+        exe = self.binary or os.environ.get("MGEVAL_CODEX_BIN") or shutil.which("codex")
+        if not exe:
+            raise ProviderError("codex CLI not found (set MGEVAL_CODEX_BIN)")
+        with tempfile.TemporaryDirectory() as work:
+            last = os.path.join(work, "last.txt")
+            cmd = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--ephemeral",
+                   "-C", work, "-o", last]
+            if self.model != "default":
+                cmd += ["-m", self.model]
+            if self.reasoning_effort:
+                cmd += ["-c", f'model_reasoning_effort="{self.reasoning_effort}"']
+            cmd.append("-")
+            text = f"{system}\n\nDo not use any tools, files or web access. Answer directly.\n\n{prompt}"
+            try:
+                proc = subprocess.run(cmd, input=text, capture_output=True, text=True, encoding="utf-8",
+                                      errors="replace", timeout=1800)
+            except subprocess.TimeoutExpired as exc:
+                raise ProviderError("codex CLI timed out") from exc
+            m = re.search(r"^model:\s*(\S+)", proc.stdout + "\n" + proc.stderr, re.MULTILINE)
+            if m:
+                self.reported_model = m.group(1)
+            if not os.path.exists(last):
+                raise ProviderError(f"codex CLI failed (rc={proc.returncode}): {proc.stderr[-300:]}")
+            with open(last, encoding="utf-8", errors="replace") as fh:
+                return fh.read()
+
+
+@dataclass
+class ClaudeCLIProvider:
+    """Claude Code headless mode (`claude -p`), all built-in tools disabled."""
+
+    model: str = "default"
+    binary: str | None = None
+
+    @property
+    def name(self) -> str:
+        return f"claude-cli:{self.model}"
+
+    def complete(self, system: str, prompt: str, max_tokens: int) -> str:
+        import shutil
+        import subprocess
+        import tempfile
+
+        exe = self.binary or os.environ.get("MGEVAL_CLAUDE_BIN") or shutil.which("claude")
+        if not exe:
+            raise ProviderError("claude CLI not found (set MGEVAL_CLAUDE_BIN)")
+        cmd = [exe, "-p", "--tools", "", "--system-prompt", system, "--output-format", "json"]
+        if self.model != "default":
+            cmd += ["--model", self.model]
+        with tempfile.TemporaryDirectory() as work:
+            proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, encoding="utf-8",
+                                  errors="replace", timeout=1800, cwd=work)
+        try:
+            out = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise ProviderError(f"claude CLI gave no JSON (rc={proc.returncode})") from exc
+        if out.get("is_error"):
+            raise ProviderError(f"claude CLI error: {str(out.get('result'))[:200]}")
+        return out.get("result", "")
+
+
+# --------------------------------------------------------------------------
 # Offline mock providers for dry runs (no keys, no network)
 # --------------------------------------------------------------------------
 @dataclass
@@ -158,7 +243,9 @@ class MockProvider:
         self._item = item
 
     def complete(self, system: str, prompt: str, max_tokens: int) -> str:
-        item = self._item or {}
+        return self.respond_item(self._item or {})
+
+    def respond_item(self, item: dict) -> str:
         checks = item.get("numeric_checks", [])
         if self.mode == "reference":
             final = {c["name"]: c["value"] for c in checks}
@@ -170,6 +257,35 @@ class MockProvider:
                 "is experienced, so the outlook is positive overall.\n\nFINAL_JSON: " + json.dumps(final)
             )
         raise ValueError(f"unknown mock mode {self.mode}")
+
+
+@dataclass
+class ReplayProvider:
+    """Replays answers collected elsewhere (for example from an agent session), so they can be
+    scored with the same judge and numeric checks. File: JSONL with item_id and response."""
+
+    path: str
+    label: str
+
+    def __post_init__(self) -> None:
+        self._answers: dict[str, str] = {}
+        with open(self.path, encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip():
+                    rec = json.loads(line)
+                    self._answers[rec["item_id"]] = rec["response"]
+
+    @property
+    def name(self) -> str:
+        return self.label
+
+    def respond_item(self, item: dict) -> str:
+        if item["id"] not in self._answers:
+            raise ProviderError(f"no recorded answer for {item['id']}")
+        return self._answers[item["id"]]
+
+    def complete(self, system: str, prompt: str, max_tokens: int) -> str:
+        raise ProviderError("replay provider answers per item only")
 
 
 def make_provider(spec: str, temperature: float | None = None) -> Provider:
@@ -185,7 +301,12 @@ def make_provider(spec: str, temperature: float | None = None) -> Provider:
         return OpenAIProvider(model, temperature)
     if prov == "google":
         return GoogleProvider(model, 0.0 if temperature is None else temperature)
-    raise ValueError(f"unknown provider {prov!r}; use anthropic, openai, google or mock")
+    if prov == "codex-cli":
+        name, _, effort = model.partition("@")  # e.g. codex-cli:default@medium
+        return CodexCLIProvider(name or "default", effort or None)
+    if prov == "claude-cli":
+        return ClaudeCLIProvider(model or "default")
+    raise ValueError(f"unknown provider {prov!r}; use anthropic, openai, google, codex-cli, claude-cli or mock")
 
 
 def available_keys() -> dict[str, bool]:

@@ -18,9 +18,9 @@ import time
 from pathlib import Path
 
 from .items import ROOT, check_items, load_split
-from .providers import available_keys, make_provider
+from .providers import ReplayProvider, available_keys, make_provider
 from .runner import results_markdown, run
-from .scoring import LLMJudge, MockJudge
+from .scoring import LLMJudge, MockJudge, ReplayJudge
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -33,6 +33,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--limit", type=int, default=0, help="max items (0 = all)")
     ap.add_argument("--max-tokens", type=int, default=4000)
     ap.add_argument("--out", default=None, help="output directory (default results/<timestamp>)")
+    ap.add_argument("--replay", action="append", default=[], metavar="FILE=LABEL",
+                    help="score answers recorded elsewhere (JSONL with item_id, response)")
+    ap.add_argument("--workers", type=int, default=1, help="parallel items per candidate")
     ap.add_argument("--check-keys", action="store_true", help="report which API keys are set, then exit")
     args = ap.parse_args(argv)
 
@@ -58,16 +61,23 @@ def main(argv: list[str] | None = None) -> int:
         candidates = [make_provider("mock:reference"), make_provider("mock:garbage")]
         judge = MockJudge()
     else:
-        if not args.model:
-            ap.error("give at least one --model provider:model_id, or use --dry-run")
+        if not args.model and not args.replay:
+            ap.error("give at least one --model provider:model_id or --replay, or use --dry-run")
         if not args.judge:
             ap.error("give --judge provider:model_id (ideally a different vendor from the candidates)")
         candidates = [make_provider(m) for m in args.model]
-        judge = LLMJudge(make_provider(args.judge))
+        for spec in args.replay:
+            path, _, label = spec.partition("=")
+            candidates.append(ReplayProvider(path, label or Path(path).stem))
+        if args.judge.startswith("replay:"):
+            jdir, _, jlabel = args.judge[len("replay:"):].partition("=")
+            judge = ReplayJudge(jdir, jlabel or "replay-judge")
+        else:
+            judge = LLMJudge(make_provider(args.judge))
 
     out = Path(args.out) if args.out else ROOT / "results" / time.strftime("%Y%m%d-%H%M%S")
     print(f"{len(items)} items, {len(candidates)} candidate(s), judge {judge.name}, writing {out}")
-    summary = run(items, candidates, judge, out, max_tokens=args.max_tokens)
+    summary = run(items, candidates, judge, out, max_tokens=args.max_tokens, workers=args.workers)
     print()
     print(results_markdown(summary))
     if summary["errors"]:

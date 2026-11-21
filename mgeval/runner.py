@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
 
-from .providers import MockProvider, ProviderError
+from .providers import ProviderError
 from .schema import CATEGORIES
 from .scoring import ItemScore, score_item
 
@@ -34,24 +34,40 @@ def build_prompt(item: dict) -> str:
     )
 
 
-def run(items: list[dict], candidates: list, judge, out_dir: Path, max_tokens: int = 4000, log=print) -> dict:
+def respond(cand, item: dict, max_tokens: int) -> str:
+    """Get a candidate's answer. Mock and replay candidates answer per item without shared state."""
+    if hasattr(cand, "respond_item"):
+        return cand.respond_item(item)
+    return cand.complete(CANDIDATE_SYSTEM, build_prompt(item), max_tokens)
+
+
+def run(items: list[dict], candidates: list, judge, out_dir: Path, max_tokens: int = 4000, log=print,
+        workers: int = 1) -> dict:
+    from concurrent.futures import ThreadPoolExecutor
+
     out_dir.mkdir(parents=True, exist_ok=True)
     responses_path = out_dir / "responses.jsonl"
     all_scores: dict[str, list[ItemScore]] = {}
     errors: list[dict] = []
+
+    def one(cand, item):
+        t0 = time.time()
+        try:
+            resp = respond(cand, item, max_tokens)
+            sc = score_item(item, resp, judge)
+        except ProviderError as exc:
+            return item, None, None, str(exc), 0.0
+        return item, resp, sc, None, time.time() - t0
+
     with responses_path.open("w", encoding="utf-8") as rf:
         for cand in candidates:
             scores: list[ItemScore] = []
-            for item in items:
-                if isinstance(cand, MockProvider):
-                    cand.bind(item)
-                t0 = time.time()
-                try:
-                    resp = cand.complete(CANDIDATE_SYSTEM, build_prompt(item), max_tokens)
-                    sc = score_item(item, resp, judge)
-                except ProviderError as exc:
-                    errors.append({"model": cand.name, "item": item["id"], "error": str(exc)})
-                    log(f"  ! {cand.name} {item['id']}: {exc}")
+            with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+                results = list(pool.map(lambda it: one(cand, it), items))
+            for item, resp, sc, err, secs in results:
+                if err:
+                    errors.append({"model": cand.name, "item": item["id"], "error": err})
+                    log(f"  ! {cand.name} {item['id']}: {err}")
                     continue
                 scores.append(sc)
                 rf.write(
@@ -65,7 +81,7 @@ def run(items: list[dict], candidates: list, judge, out_dir: Path, max_tokens: i
                             "numeric": [asdict(n) for n in sc.numeric],
                             "earned": sc.earned,
                             "available": sc.available,
-                            "seconds": round(time.time() - t0, 2),
+                            "seconds": round(secs, 2),
                         }
                     )
                     + "\n"
