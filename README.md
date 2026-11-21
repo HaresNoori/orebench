@@ -41,6 +41,9 @@ tests this ground:
 | FormationEval (arXiv 2601.02158) | Petroleum geoscience questions | Hard-rock and alluvial mining not covered |
 | MineBench, from the MineAgent work (arXiv 2412.17339) | Remote-sensing mineral exploration | No reporting codes, studies or finance |
 
+A wider survey with full citations is in [`RELATED_WORK.md`](RELATED_WORK.md). It found no
+open text benchmark for hard-rock mining, resource reporting or mining finance.
+
 OreBench is, to the author's knowledge, the first public benchmark built on the JORC Code,
 NI 43-101 / CIM and S-K 1300 practice, together with mining project finance (streams,
 royalties, debt sizing, P/NAV).
@@ -134,6 +137,7 @@ tier is specified in [`HARD_TIER_DESIGN.md`](HARD_TIER_DESIGN.md) (design only; 
 TAXONOMY.md               categories, difficulty scale, sources
 RESULTS.md                v0.1 preliminary results, judge setup and limits
 HARD_TIER_DESIGN.md       design of the held-out Hard tier (no items published)
+RELATED_WORK.md           survey of geoscience and mining LLM benchmarks
 results_v0.1/             per-item scores and full model answers
 CASE_STUDY.md             one-page summary
 docs/AUTHORING.md         item format and authoring rules
