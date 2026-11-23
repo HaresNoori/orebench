@@ -2,7 +2,7 @@
 
 **Can a frontier model sign off as a Competent Person?**
 
-OreBench is an expert-written benchmark of mining geoscience and mining finance reasoning:
+OreBench is a practitioner-written benchmark of mining geoscience and mining finance reasoning:
 reading a JORC or NI 43-101 resource statement, finding the flaw in a scoping study, getting
 contained metal right, judging a drill intercept, and naming the risk that actually stops a
 project.
