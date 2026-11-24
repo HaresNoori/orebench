@@ -236,3 +236,11 @@ def test_multi_run_and_bootstrap_ci(tmp_path):
     assert 0.0 <= lo <= 62.5 <= hi <= 100.0
     assert bootstrap_ci([(1, 2)] * 5) == (50.0, 50.0)
     assert "95% CI" in (tmp_path / "results.md").read_text(encoding="utf-8")
+
+
+def test_build_prompt_includes_document_extract():
+    from mgeval.runner import build_prompt
+    item = {"prompt": "Task text here.", "document_extract": "Extract body.", "numeric_checks": []}
+    p = build_prompt(item)
+    assert p.index("Extract body.") < p.index("Task text here.")
+    assert build_prompt({"prompt": "Plain.", "numeric_checks": []}) == "Plain."

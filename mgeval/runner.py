@@ -22,12 +22,16 @@ CANDIDATE_SYSTEM = (
 
 
 def build_prompt(item: dict) -> str:
+    task = item["prompt"]
+    if item.get("document_extract"):
+        # Long-document items: the extract comes first, then the task.
+        task = "DOCUMENT EXTRACT\n\n" + item["document_extract"] + "\n\nTASK\n\n" + task
     checks = item.get("numeric_checks", [])
     if not checks:
-        return item["prompt"]
+        return task
     keys = ", ".join(f'"{c["name"]}" ({c["unit"]})' for c in checks)
     return (
-        item["prompt"]
+        task
         + "\n\nAfter your answer, finish with one final line in exactly this form, with plain numbers "
         + f"(no units or thousands separators) for these keys: {keys}\n"
         + "FINAL_JSON: {"
