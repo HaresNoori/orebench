@@ -100,8 +100,8 @@ Design principles:
 3. **n = 30, single run, no repeats.** The intervals above cover item sampling only. The Opus
    and Sonnet intervals overlap. The Claude and GPT intervals do not, but those rows were graded
    by different judges, so part of that gap may reflect judge differences.
-4. **Items are still under expert review.** An independent technical review has already
-   corrected 11 of the 30 public items. Scores may move as items are signed off.
+4. **Items are still under expert review.** Some public items were corrected after
+   review. Scores may move as items are signed off.
 5. **Gemini and Grok not included.** No Gemini command-line tool was available on the test
    machine, and Grok had no comparable verbatim route.
 

@@ -59,7 +59,7 @@ royalties, debt sizing, P/NAV).
 
 ## Method
 
-1. **Practitioner-written items.** Each item encodes a judgement made in real technical-report
+1. **Expert-written items.** Each item encodes a judgement made in real technical-report
    and due-diligence work. Projects are **hypothetical** by default, so no claim is made about
    any real company. Citations point to the public standards, and each one is flagged as
    checked against the primary document or not.
